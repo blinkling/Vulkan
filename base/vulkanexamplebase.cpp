@@ -7,6 +7,7 @@
 */
 
 #include "vulkanexamplebase.h"
+#include <thread>
 
 std::vector<const char*> VulkanExampleBase::args;
 
@@ -83,7 +84,8 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 		if (validationLayerPresent) {
 			instanceCreateInfo.ppEnabledLayerNames = &validationLayerName;
 			instanceCreateInfo.enabledLayerCount = 1;
-		} else {
+		}
+		else {
 			std::cerr << "Validation layer VK_LAYER_KHRONOS_validation not present, validation is disabled";
 		}
 	}
@@ -174,7 +176,7 @@ void VulkanExampleBase::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueu
 	{
 		return;
 	}
-	
+
 	VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 
 	VkSubmitInfo submitInfo = {};
@@ -254,6 +256,14 @@ void VulkanExampleBase::renderFrame()
 	frameCounter++;
 	auto tEnd = std::chrono::high_resolution_clock::now();
 	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+	//limitFrame
+	if (limitFrame && tDiff <= delta_time)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long>(delta_time - tDiff)));
+		tEnd = std::chrono::high_resolution_clock::now();
+		tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+	}
+
 	frameTimer = (float)tDiff / 1000.0f;
 	camera.update(frameTimer);
 	if (camera.moving())
@@ -274,7 +284,7 @@ void VulkanExampleBase::renderFrame()
 	{
 		lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
 #if defined(_WIN32)
-		if (!settings.overlay)	{
+		if (!settings.overlay) {
 			std::string windowTitle = getWindowTitle();
 			SetWindowText(window, windowTitle.c_str());
 		}
@@ -598,6 +608,8 @@ void VulkanExampleBase::updateOverlay()
 	ImGui::TextUnformatted(title.c_str());
 	ImGui::TextUnformatted(deviceProperties.deviceName);
 	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
+	ImGui::Text("Mouse X: %.0f Y: %.0f", mousePos.x, mousePos.y);//鼠标位置
+	ImGui::Checkbox("Limit 60 FPS", &limitFrame);//是否控制帧率
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 5.0f * UIOverlay.scale));
@@ -658,7 +670,8 @@ void VulkanExampleBase::submitFrame()
 			// Swap chain is no longer compatible with the surface and needs to be recreated
 			windowResize();
 			return;
-		} else {
+		}
+		else {
 			VK_CHECK_RESULT(result);
 		}
 	}
@@ -717,7 +730,8 @@ VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 				uint32_t num = strtol(args[i + 1], &numConvPtr, 10);
 				if (numConvPtr != args[i + 1]) {
 					benchmark.warmup = num;
-				} else {
+				}
+				else {
 					std::cerr << "Warmup time for benchmark mode must be specified as a number!" << std::endl;
 				}
 			}
@@ -739,7 +753,8 @@ VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 			if (args.size() > i + 1) {
 				if (args[i + 1][0] == '-') {
 					std::cerr << "Filename for benchmark results must not start with a hyphen!" << std::endl;
-				} else {
+				}
+				else {
 					benchmark.filename = args[i + 1];
 				}
 			}
@@ -749,7 +764,7 @@ VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 			benchmark.outputFrameTimes = true;
 		}
 	}
-	
+
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	// Vulkan library is loaded dynamically on Android
 	bool libLoaded = vks::android::loadVulkanLibrary();
@@ -895,12 +910,12 @@ bool VulkanExampleBase::initVulkan()
 		{
 			char* endptr;
 			uint32_t index = strtol(args[i + 1], &endptr, 10);
-			if (endptr != args[i + 1]) 
-			{ 
+			if (endptr != args[i + 1])
+			{
 				if (index > gpuCount - 1)
 				{
 					std::cerr << "Selected device index " << index << " is out of range, reverting to device 0 (use -listgpus to show available Vulkan devices)" << std::endl;
-				} 
+				}
 				else
 				{
 					std::cout << "Selected Vulkan device " << index << std::endl;
@@ -914,11 +929,11 @@ bool VulkanExampleBase::initVulkan()
 		{
 			uint32_t gpuCount = 0;
 			VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
-			if (gpuCount == 0) 
+			if (gpuCount == 0)
 			{
 				std::cerr << "No Vulkan devices found!" << std::endl;
 			}
-			else 
+			else
 			{
 				// Enumerate devices
 				std::cout << "Available Vulkan devices" << std::endl;
@@ -988,7 +1003,7 @@ bool VulkanExampleBase::initVulkan()
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	// Get Android device name and manufacturer (to display along GPU name)
 	androidProduct = "";
-	char prop[PROP_VALUE_MAX+1];
+	char prop[PROP_VALUE_MAX + 1];
 	int len = __system_property_get("ro.product.manufacturer", prop);
 	if (len > 0) {
 		androidProduct += std::string(prop) + " ";
@@ -1279,97 +1294,97 @@ int32_t VulkanExampleBase::handleAppInput(struct android_app* app, AInputEvent* 
 	{
 		int32_t eventSource = AInputEvent_getSource(event);
 		switch (eventSource) {
-			case AINPUT_SOURCE_JOYSTICK: {
-				// Left thumbstick
-				vulkanExample->gamePadState.axisLeft.x = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_X, 0);
-				vulkanExample->gamePadState.axisLeft.y = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_Y, 0);
-				// Right thumbstick
-				vulkanExample->gamePadState.axisRight.x = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_Z, 0);
-				vulkanExample->gamePadState.axisRight.y = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_RZ, 0);
+		case AINPUT_SOURCE_JOYSTICK: {
+			// Left thumbstick
+			vulkanExample->gamePadState.axisLeft.x = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_X, 0);
+			vulkanExample->gamePadState.axisLeft.y = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_Y, 0);
+			// Right thumbstick
+			vulkanExample->gamePadState.axisRight.x = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_Z, 0);
+			vulkanExample->gamePadState.axisRight.y = AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_RZ, 0);
+			break;
+		}
+
+		case AINPUT_SOURCE_TOUCHSCREEN: {
+			int32_t action = AMotionEvent_getAction(event);
+
+			switch (action) {
+			case AMOTION_EVENT_ACTION_UP: {
+				vulkanExample->lastTapTime = AMotionEvent_getEventTime(event);
+				vulkanExample->touchPos.x = AMotionEvent_getX(event, 0);
+				vulkanExample->touchPos.y = AMotionEvent_getY(event, 0);
+				vulkanExample->touchTimer = 0.0;
+				vulkanExample->touchDown = false;
+				vulkanExample->camera.keys.up = false;
+
+				// Detect single tap
+				int64_t eventTime = AMotionEvent_getEventTime(event);
+				int64_t downTime = AMotionEvent_getDownTime(event);
+				if (eventTime - downTime <= vks::android::TAP_TIMEOUT) {
+					float deadZone = (160.f / vks::android::screenDensity) * vks::android::TAP_SLOP * vks::android::TAP_SLOP;
+					float x = AMotionEvent_getX(event, 0) - vulkanExample->touchPos.x;
+					float y = AMotionEvent_getY(event, 0) - vulkanExample->touchPos.y;
+					if ((x * x + y * y) < deadZone) {
+						vulkanExample->mouseButtons.left = true;
+					}
+				};
+
+				return 1;
 				break;
 			}
-
-			case AINPUT_SOURCE_TOUCHSCREEN: {
-				int32_t action = AMotionEvent_getAction(event);
-
-				switch (action) {
-					case AMOTION_EVENT_ACTION_UP: {
-						vulkanExample->lastTapTime = AMotionEvent_getEventTime(event);
-						vulkanExample->touchPos.x = AMotionEvent_getX(event, 0);
-						vulkanExample->touchPos.y = AMotionEvent_getY(event, 0);
-						vulkanExample->touchTimer = 0.0;
+			case AMOTION_EVENT_ACTION_DOWN: {
+				// Detect double tap
+				int64_t eventTime = AMotionEvent_getEventTime(event);
+				if (eventTime - vulkanExample->lastTapTime <= vks::android::DOUBLE_TAP_TIMEOUT) {
+					float deadZone = (160.f / vks::android::screenDensity) * vks::android::DOUBLE_TAP_SLOP * vks::android::DOUBLE_TAP_SLOP;
+					float x = AMotionEvent_getX(event, 0) - vulkanExample->touchPos.x;
+					float y = AMotionEvent_getY(event, 0) - vulkanExample->touchPos.y;
+					if ((x * x + y * y) < deadZone) {
+						vulkanExample->keyPressed(TOUCH_DOUBLE_TAP);
 						vulkanExample->touchDown = false;
-						vulkanExample->camera.keys.up = false;
-
-						// Detect single tap
-						int64_t eventTime = AMotionEvent_getEventTime(event);
-						int64_t downTime = AMotionEvent_getDownTime(event);
-						if (eventTime - downTime <= vks::android::TAP_TIMEOUT) {
-							float deadZone = (160.f / vks::android::screenDensity) * vks::android::TAP_SLOP * vks::android::TAP_SLOP;
-							float x = AMotionEvent_getX(event, 0) - vulkanExample->touchPos.x;
-							float y = AMotionEvent_getY(event, 0) - vulkanExample->touchPos.y;
-							if ((x * x + y * y) < deadZone) {
-								vulkanExample->mouseButtons.left = true;
-							}
-						};
-
-						return 1;
-						break;
 					}
-					case AMOTION_EVENT_ACTION_DOWN: {
-						// Detect double tap
-						int64_t eventTime = AMotionEvent_getEventTime(event);
-						if (eventTime - vulkanExample->lastTapTime <= vks::android::DOUBLE_TAP_TIMEOUT) {
-							float deadZone = (160.f / vks::android::screenDensity) * vks::android::DOUBLE_TAP_SLOP * vks::android::DOUBLE_TAP_SLOP;
-							float x = AMotionEvent_getX(event, 0) - vulkanExample->touchPos.x;
-							float y = AMotionEvent_getY(event, 0) - vulkanExample->touchPos.y;
-							if ((x * x + y * y) < deadZone) {
-								vulkanExample->keyPressed(TOUCH_DOUBLE_TAP);
-								vulkanExample->touchDown = false;
-							}
-						}
-						else {
-							vulkanExample->touchDown = true;
-						}
-						vulkanExample->touchPos.x = AMotionEvent_getX(event, 0);
-						vulkanExample->touchPos.y = AMotionEvent_getY(event, 0);
-						vulkanExample->mousePos.x = AMotionEvent_getX(event, 0);
-						vulkanExample->mousePos.y = AMotionEvent_getY(event, 0);
-						break;
-					}					
-					case AMOTION_EVENT_ACTION_MOVE: {
-						bool handled = false;
-						if (vulkanExample->settings.overlay) {
-							ImGuiIO& io = ImGui::GetIO();
-							handled = io.WantCaptureMouse;
-						}					
-						if (!handled) {
-							int32_t eventX = AMotionEvent_getX(event, 0);
-							int32_t eventY = AMotionEvent_getY(event, 0);
-
-							float deltaX = (float)(vulkanExample->touchPos.y - eventY) * vulkanExample->rotationSpeed * 0.5f;
-							float deltaY = (float)(vulkanExample->touchPos.x - eventX) * vulkanExample->rotationSpeed * 0.5f;
-
-							vulkanExample->camera.rotate(glm::vec3(deltaX, 0.0f, 0.0f));
-							vulkanExample->camera.rotate(glm::vec3(0.0f, -deltaY, 0.0f));
-
-							vulkanExample->rotation.x += deltaX;
-							vulkanExample->rotation.y -= deltaY;
-
-							vulkanExample->viewChanged();
-
-							vulkanExample->touchPos.x = eventX;
-							vulkanExample->touchPos.y = eventY;
-						}
-						break;
-					}
-					default:
-						return 1;
-						break;
 				}
+				else {
+					vulkanExample->touchDown = true;
+				}
+				vulkanExample->touchPos.x = AMotionEvent_getX(event, 0);
+				vulkanExample->touchPos.y = AMotionEvent_getY(event, 0);
+				vulkanExample->mousePos.x = AMotionEvent_getX(event, 0);
+				vulkanExample->mousePos.y = AMotionEvent_getY(event, 0);
+				break;
 			}
+			case AMOTION_EVENT_ACTION_MOVE: {
+				bool handled = false;
+				if (vulkanExample->settings.overlay) {
+					ImGuiIO& io = ImGui::GetIO();
+					handled = io.WantCaptureMouse;
+				}
+				if (!handled) {
+					int32_t eventX = AMotionEvent_getX(event, 0);
+					int32_t eventY = AMotionEvent_getY(event, 0);
 
-			return 1;
+					float deltaX = (float)(vulkanExample->touchPos.y - eventY) * vulkanExample->rotationSpeed * 0.5f;
+					float deltaY = (float)(vulkanExample->touchPos.x - eventX) * vulkanExample->rotationSpeed * 0.5f;
+
+					vulkanExample->camera.rotate(glm::vec3(deltaX, 0.0f, 0.0f));
+					vulkanExample->camera.rotate(glm::vec3(0.0f, -deltaY, 0.0f));
+
+					vulkanExample->rotation.x += deltaX;
+					vulkanExample->rotation.y -= deltaY;
+
+					vulkanExample->viewChanged();
+
+					vulkanExample->touchPos.x = eventX;
+					vulkanExample->touchPos.y = eventY;
+				}
+				break;
+			}
+			default:
+				return 1;
+				break;
+			}
+		}
+
+										return 1;
 		}
 	}
 
@@ -1471,33 +1486,33 @@ void* VulkanExampleBase::setupWindow(void* view)
 #elif defined(_DIRECT2DISPLAY)
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
 /*static*/void VulkanExampleBase::registryGlobalCb(void *data,
-		wl_registry *registry, uint32_t name, const char *interface,
-		uint32_t version)
+	wl_registry *registry, uint32_t name, const char *interface,
+	uint32_t version)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->registryGlobal(registry, name, interface, version);
 }
 
 /*static*/void VulkanExampleBase::seatCapabilitiesCb(void *data, wl_seat *seat,
-		uint32_t caps)
+	uint32_t caps)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->seatCapabilities(seat, caps);
 }
 
 /*static*/void VulkanExampleBase::pointerEnterCb(void *data,
-		wl_pointer *pointer, uint32_t serial, wl_surface *surface,
-		wl_fixed_t sx, wl_fixed_t sy)
+	wl_pointer *pointer, uint32_t serial, wl_surface *surface,
+	wl_fixed_t sx, wl_fixed_t sy)
 {
 }
 
 /*static*/void VulkanExampleBase::pointerLeaveCb(void *data,
-		wl_pointer *pointer, uint32_t serial, wl_surface *surface)
+	wl_pointer *pointer, uint32_t serial, wl_surface *surface)
 {
 }
 
 /*static*/void VulkanExampleBase::pointerMotionCb(void *data,
-		wl_pointer *pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
+	wl_pointer *pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->pointerMotion(pointer, time, sx, sy);
@@ -1508,15 +1523,15 @@ void VulkanExampleBase::pointerMotion(wl_pointer *pointer, uint32_t time, wl_fix
 }
 
 /*static*/void VulkanExampleBase::pointerButtonCb(void *data,
-		wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button,
-		uint32_t state)
+	wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button,
+	uint32_t state)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->pointerButton(pointer, serial, time, button, state);
 }
 
 void VulkanExampleBase::pointerButton(struct wl_pointer *pointer,
-		uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
+	uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
 	switch (button)
 	{
@@ -1535,15 +1550,15 @@ void VulkanExampleBase::pointerButton(struct wl_pointer *pointer,
 }
 
 /*static*/void VulkanExampleBase::pointerAxisCb(void *data,
-		wl_pointer *pointer, uint32_t time, uint32_t axis,
-		wl_fixed_t value)
+	wl_pointer *pointer, uint32_t time, uint32_t axis,
+	wl_fixed_t value)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->pointerAxis(pointer, time, axis, value);
 }
 
 void VulkanExampleBase::pointerAxis(wl_pointer *pointer, uint32_t time,
-		uint32_t axis, wl_fixed_t value)
+	uint32_t axis, wl_fixed_t value)
 {
 	double d = wl_fixed_to_double(value);
 	switch (axis)
@@ -1559,32 +1574,32 @@ void VulkanExampleBase::pointerAxis(wl_pointer *pointer, uint32_t time,
 }
 
 /*static*/void VulkanExampleBase::keyboardKeymapCb(void *data,
-		struct wl_keyboard *keyboard, uint32_t format, int fd, uint32_t size)
+	struct wl_keyboard *keyboard, uint32_t format, int fd, uint32_t size)
 {
 }
 
 /*static*/void VulkanExampleBase::keyboardEnterCb(void *data,
-		struct wl_keyboard *keyboard, uint32_t serial,
-		struct wl_surface *surface, struct wl_array *keys)
+	struct wl_keyboard *keyboard, uint32_t serial,
+	struct wl_surface *surface, struct wl_array *keys)
 {
 }
 
 /*static*/void VulkanExampleBase::keyboardLeaveCb(void *data,
-		struct wl_keyboard *keyboard, uint32_t serial,
-		struct wl_surface *surface)
+	struct wl_keyboard *keyboard, uint32_t serial,
+	struct wl_surface *surface)
 {
 }
 
 /*static*/void VulkanExampleBase::keyboardKeyCb(void *data,
-		struct wl_keyboard *keyboard, uint32_t serial, uint32_t time,
-		uint32_t key, uint32_t state)
+	struct wl_keyboard *keyboard, uint32_t serial, uint32_t time,
+	uint32_t key, uint32_t state)
 {
 	VulkanExampleBase *self = reinterpret_cast<VulkanExampleBase *>(data);
 	self->keyboardKey(keyboard, serial, time, key, state);
 }
 
 void VulkanExampleBase::keyboardKey(struct wl_keyboard *keyboard,
-		uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
+	uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
 	switch (key)
 	{
@@ -1618,8 +1633,8 @@ void VulkanExampleBase::keyboardKey(struct wl_keyboard *keyboard,
 }
 
 /*static*/void VulkanExampleBase::keyboardModifiersCb(void *data,
-		struct wl_keyboard *keyboard, uint32_t serial, uint32_t mods_depressed,
-		uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
+	struct wl_keyboard *keyboard, uint32_t serial, uint32_t mods_depressed,
+	uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
 }
 
@@ -1664,23 +1679,23 @@ static const struct xdg_wm_base_listener xdg_wm_base_listener = {
 };
 
 void VulkanExampleBase::registryGlobal(wl_registry *registry, uint32_t name,
-		const char *interface, uint32_t version)
+	const char *interface, uint32_t version)
 {
 	if (strcmp(interface, "wl_compositor") == 0)
 	{
-		compositor = (wl_compositor *) wl_registry_bind(registry, name,
-				&wl_compositor_interface, 3);
+		compositor = (wl_compositor *)wl_registry_bind(registry, name,
+			&wl_compositor_interface, 3);
 	}
 	else if (strcmp(interface, "xdg_wm_base") == 0)
 	{
-		shell = (xdg_wm_base *) wl_registry_bind(registry, name,
-				&xdg_wm_base_interface, 1);
+		shell = (xdg_wm_base *)wl_registry_bind(registry, name,
+			&xdg_wm_base_interface, 1);
 		xdg_wm_base_add_listener(shell, &xdg_wm_base_listener, nullptr);
 	}
 	else if (strcmp(interface, "wl_seat") == 0)
 	{
-		seat = (wl_seat *) wl_registry_bind(registry, name, &wl_seat_interface,
-				1);
+		seat = (wl_seat *)wl_registry_bind(registry, name, &wl_seat_interface,
+			1);
 
 		static const struct wl_seat_listener seat_listener =
 		{ seatCapabilitiesCb, };
@@ -1689,7 +1704,7 @@ void VulkanExampleBase::registryGlobal(wl_registry *registry, uint32_t name,
 }
 
 /*static*/void VulkanExampleBase::registryGlobalRemoveCb(void *data,
-		struct wl_registry *registry, uint32_t name)
+	struct wl_registry *registry, uint32_t name)
 {
 }
 
@@ -1737,9 +1752,9 @@ void VulkanExampleBase::setSize(int width, int height)
 
 static void
 xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
-			     uint32_t serial)
+	uint32_t serial)
 {
-	VulkanExampleBase *base = (VulkanExampleBase *) data;
+	VulkanExampleBase *base = (VulkanExampleBase *)data;
 
 	xdg_surface_ack_configure(surface, serial);
 	base->configured = true;
@@ -1752,10 +1767,10 @@ static const struct xdg_surface_listener xdg_surface_listener = {
 
 static void
 xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *toplevel,
-			      int32_t width, int32_t height,
-			      struct wl_array *states)
+	int32_t width, int32_t height,
+	struct wl_array *states)
 {
-	VulkanExampleBase *base = (VulkanExampleBase *) data;
+	VulkanExampleBase *base = (VulkanExampleBase *)data;
 
 	base->setSize(width, height);
 }
@@ -1763,7 +1778,7 @@ xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *toplevel,
 static void
 xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
 {
-	VulkanExampleBase *base = (VulkanExampleBase *) data;
+	VulkanExampleBase *base = (VulkanExampleBase *)data;
 
 	base->quit = true;
 }
@@ -1850,13 +1865,13 @@ xcb_window_t VulkanExampleBase::setupWindow()
 		xcb_intern_atom_reply_t *atom_wm_state = intern_atom_helper(connection, false, "_NET_WM_STATE");
 		xcb_intern_atom_reply_t *atom_wm_fullscreen = intern_atom_helper(connection, false, "_NET_WM_STATE_FULLSCREEN");
 		xcb_change_property(connection,
-				XCB_PROP_MODE_REPLACE,
-				window, atom_wm_state->atom,
-				XCB_ATOM_ATOM, 32, 1,
-				&(atom_wm_fullscreen->atom));
+			XCB_PROP_MODE_REPLACE,
+			window, atom_wm_state->atom,
+			XCB_ATOM_ATOM, 32, 1,
+			&(atom_wm_fullscreen->atom));
 		free(atom_wm_fullscreen);
 		free(atom_wm_state);
-	}	
+	}
 
 	xcb_map_window(connection, window);
 
@@ -1928,49 +1943,49 @@ void VulkanExampleBase::handleEvent(const xcb_generic_event_t *event)
 		const xcb_key_release_event_t *keyEvent = (const xcb_key_release_event_t *)event;
 		switch (keyEvent->detail)
 		{
-			case KEY_W:
-				camera.keys.up = true;
-				break;
-			case KEY_S:
-				camera.keys.down = true;
-				break;
-			case KEY_A:
-				camera.keys.left = true;
-				break;
-			case KEY_D:
-				camera.keys.right = true;
-				break;
-			case KEY_P:
-				paused = !paused;
-				break;
-			case KEY_F1:
-				if (settings.overlay) {
-					settings.overlay = !settings.overlay;
-				}
-				break;				
+		case KEY_W:
+			camera.keys.up = true;
+			break;
+		case KEY_S:
+			camera.keys.down = true;
+			break;
+		case KEY_A:
+			camera.keys.left = true;
+			break;
+		case KEY_D:
+			camera.keys.right = true;
+			break;
+		case KEY_P:
+			paused = !paused;
+			break;
+		case KEY_F1:
+			if (settings.overlay) {
+				settings.overlay = !settings.overlay;
+			}
+			break;
 		}
 	}
-	break;	
+	break;
 	case XCB_KEY_RELEASE:
 	{
 		const xcb_key_release_event_t *keyEvent = (const xcb_key_release_event_t *)event;
 		switch (keyEvent->detail)
 		{
-			case KEY_W:
-				camera.keys.up = false;
-				break;
-			case KEY_S:
-				camera.keys.down = false;
-				break;
-			case KEY_A:
-				camera.keys.left = false;
-				break;
-			case KEY_D:
-				camera.keys.right = false;
-				break;			
-			case KEY_ESCAPE:
-				quit = true;
-				break;
+		case KEY_W:
+			camera.keys.up = false;
+			break;
+		case KEY_S:
+			camera.keys.down = false;
+			break;
+		case KEY_A:
+			camera.keys.left = false;
+			break;
+		case KEY_D:
+			camera.keys.right = false;
+			break;
+		case KEY_ESCAPE:
+			quit = true;
+			break;
 		}
 		keyPressed(keyEvent->detail);
 	}
@@ -1983,12 +1998,12 @@ void VulkanExampleBase::handleEvent(const xcb_generic_event_t *event)
 		const xcb_configure_notify_event_t *cfgEvent = (const xcb_configure_notify_event_t *)event;
 		if ((prepared) && ((cfgEvent->width != width) || (cfgEvent->height != height)))
 		{
-				destWidth = cfgEvent->width;
-				destHeight = cfgEvent->height;
-				if ((destWidth > 0) && (destHeight > 0))
-				{
-					windowResize();
-				}
+			destWidth = cfgEvent->width;
+			destHeight = cfgEvent->height;
+			if ((destWidth > 0) && (destHeight > 0))
+			{
+				windowResize();
+			}
 		}
 	}
 	break;
@@ -2189,7 +2204,7 @@ void VulkanExampleBase::windowResize()
 	vkDestroyImageView(device, depthStencil.view, nullptr);
 	vkDestroyImage(device, depthStencil.image, nullptr);
 	vkFreeMemory(device, depthStencil.mem, nullptr);
-	setupDepthStencil();	
+	setupDepthStencil();
 	for (uint32_t i = 0; i < frameBuffers.size(); i++) {
 		vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
 	}
