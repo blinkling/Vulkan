@@ -117,3 +117,5 @@ set(EXAMPLES
 )
 
 buildExamples()
+
+target_link_libraries(texture crnlib)

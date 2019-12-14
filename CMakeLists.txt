@@ -14,6 +14,8 @@ include_directories(external/imgui)
 include_directories(external/tinygltf)
 include_directories(base)
 
+include_directories(external/crnlib)
+
 OPTION(USE_D2D_WSI "Build the project using Direct to Display swapchain" OFF)
 OPTION(USE_WAYLAND_WSI "Build the project using Wayland swapchain" OFF)
 
@@ -128,3 +130,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
 add_subdirectory(base)
 add_subdirectory(examples)
 add_subdirectory(external)
+add_subdirectory(external/crnlib)
