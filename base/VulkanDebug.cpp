@@ -66,6 +66,9 @@ namespace vks
 			return VK_FALSE;
 		}
 
+		//The application must ensure that vkCreateDebugUtilsMessengerEXT is not executed in parallel
+		//with any Vulkan command that is also called with instance or child of instance as the dispatchable argument
+
 		void setupDebugging(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportCallbackEXT callBack)
 		{
 

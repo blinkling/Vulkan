@@ -55,6 +55,7 @@ set(EXAMPLES
 	conditionalrender
 	conservativeraster
 	debugmarker
+	debugutils
 	deferred
 	deferredmultisampling
 	deferredshadows
@@ -100,6 +101,7 @@ set(EXAMPLES
 	specializationconstants
 	sphericalenvmapping
 	ssao
+	ssao_subpass
 	stencilbuffer
 	subpasses
 	terraintessellation

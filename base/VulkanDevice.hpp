@@ -298,7 +298,13 @@ namespace vks
 			deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());;
 			deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 			deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
-		
+
+			//https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/blob/master/loader/LoaderAndLayerInterface.md#application-layer-usage
+			//
+			//uint32_t                           enabledLayerCount;   deprecated!
+			//const char* const*                 ppEnabledLayerNames; deprecated!
+		    //vkEnumerateDeviceLayerProperties						  deprecated!
+		 
 			// If a pNext(Chain) has been passed, we need to add it to the device creation info
 			if (pNextChain) {
 				VkPhysicalDeviceFeatures2 physicalDeviceFeatures2{};

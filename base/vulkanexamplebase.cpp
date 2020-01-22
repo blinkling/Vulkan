@@ -1,4 +1,4 @@
-/*
+Ôªø/*
 * Vulkan Example base class
 *
 * Copyright (C) by Sascha Willems - www.saschawillems.de
@@ -27,6 +27,9 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 	appInfo.apiVersion = apiVersion;
 
 	std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
+ 
+	
+
 
 	// Enable surface extensions depending on os
 #if defined(_WIN32)
@@ -55,6 +58,13 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instanceCreateInfo.pNext = NULL;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
+
+	//uint32_t instanceExtensionCount;
+	//vkEnumerateInstanceExtensionProperties("VK_LAYER_KHRONOS_validation",&instanceExtensionCount, nullptr);
+	//std::vector<VkExtensionProperties> instanceExtensionProperties(instanceExtensionCount);
+	// 
+	//vkEnumerateInstanceExtensionProperties("VK_LAYER_KHRONOS_validation",&instanceExtensionCount, instanceExtensionProperties.data());
+
 	if (instanceExtensions.size() > 0)
 	{
 		if (settings.validation)
@@ -69,6 +79,7 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 		// The VK_LAYER_KHRONOS_validation contains all current validation functionality.
 		// Note that on Android this layer requires at least NDK r20 
 		const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
+	 
 		// Check if this layer is available at instance level
 		uint32_t instanceLayerCount;
 		vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
@@ -82,6 +93,7 @@ VkResult VulkanExampleBase::createInstance(bool enableValidation)
 			}
 		}
 		if (validationLayerPresent) {
+ 
 			instanceCreateInfo.ppEnabledLayerNames = &validationLayerName;
 			instanceCreateInfo.enabledLayerCount = 1;
 		}
@@ -608,8 +620,8 @@ void VulkanExampleBase::updateOverlay()
 	ImGui::TextUnformatted(title.c_str());
 	ImGui::TextUnformatted(deviceProperties.deviceName);
 	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
-	ImGui::Text("Mouse X: %.0f Y: %.0f", mousePos.x, mousePos.y);// Û±ÍŒª÷√
-	ImGui::Checkbox("Limit 60 FPS", &limitFrame);// «∑Òøÿ÷∆÷°¬ 
+	ImGui::Text("Mouse X: %.0f Y: %.0f", mousePos.x, mousePos.y);//Èº†Ê†á‰ΩçÁΩÆ
+	ImGui::Checkbox("Limit 60 FPS", &limitFrame);//ÊòØÂê¶ÊéßÂà∂Â∏ßÁéá
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 5.0f * UIOverlay.scale));

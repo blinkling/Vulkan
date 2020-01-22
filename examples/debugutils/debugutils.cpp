@@ -30,8 +30,9 @@
 #define OFFSCREEN_FILTER VK_FILTER_LINEAR;
 
 //luling
+
 //VK_EXT_debug_maker is deprecated. and VK_EXT_debug_utils can do anything as VK_EXT_debug_maker can do
-//This example just copy from debugmarker.cpp and change slightly for VK_EXT_debug_utils funcs.
+//This example is duplicated of debugmarker.cpp and changed slightly for VK_EXT_debug_utils funcs.
 
 // Setup and functions for the VK_EXT_debug_utils_extension
 // Note that the extension will only be present if run from an offline debugging application
@@ -42,24 +43,136 @@ namespace DebugUtils
 
 	PFN_vkSetDebugUtilsObjectTagEXT vkSetDebugUtilsObjectTagEXT = VK_NULL_HANDLE;
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = VK_NULL_HANDLE;
+
+	//Command Buffer Labels
 	PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = VK_NULL_HANDLE;
 	PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = VK_NULL_HANDLE;
 	PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = VK_NULL_HANDLE;
 
-	//PFN_vkDebugUtilsMessengerCallbackEXT vkDebugUtilsMessengerCallbackEXT = VK_NULL_HANDLE;//luling
-	//PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = VK_NULL_HANDLE;
+	//Queue Labels
+	PFN_vkQueueBeginDebugUtilsLabelEXT vkQueueBeginDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkQueueEndDebugUtilsLabelEXT vkQueueEndDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkQueueInsertDebugUtilsLabelEXT vkQueueInsertDebugUtilsLabelEXT = VK_NULL_HANDLE;
 
-	VkDebugUtilsMessengerEXT cb1, cb2, cb3;
+	PFN_vkDebugUtilsMessengerCallbackEXT vkDebugUtilsMessengerCallbackEXT = VK_NULL_HANDLE;//luling
+
+
+
+	PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = VK_NULL_HANDLE;
+	PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = VK_NULL_HANDLE;
+
+	PFN_vkSubmitDebugUtilsMessageEXT vkSubmitDebugUtilsMessageEXT = VK_NULL_HANDLE;
+	VkDebugUtilsMessengerEXT debugUtilsMessenger;
+
+
+	VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
+	{
+		// Select prefix depending on flags passed to the callback
+		std::string prefix("");
+
+		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+			prefix = "VERBOSE: ";
+		}
+		else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+			prefix = "INFO: ";
+		}
+		else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+			prefix = "WARNING: ";
+		}
+		else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+			prefix = "ERROR: ";
+		}
+
+		// Display message to default output (console/logcat)
+		std::stringstream debugMessage;
+		debugMessage << prefix << "[" << pCallbackData->messageIdNumber << "][" << pCallbackData->pMessageIdName << "] : " << pCallbackData->pMessage;
+
+		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+			std::cerr << debugMessage.str() << "\n";
+		}
+		else {
+			std::cout << debugMessage.str() << "\n";
+		}
+		fflush(stdout);
+
+		// The return value of this callback controls wether the Vulkan call that caused the validation message will be aborted or not
+		// We return VK_FALSE as we DON'T want Vulkan calls that cause a validation message to abort
+		// If you instead want to have calls abort, pass in VK_TRUE and the function will return VK_ERROR_VALIDATION_FAILED_EXT 
+		return VK_FALSE;
+	}
+
+	void setupDebugging(VkInstance instance)
+	{
+
+		vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+		vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+		vkSubmitDebugUtilsMessageEXT = reinterpret_cast<PFN_vkSubmitDebugUtilsMessageEXT>(vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT"));
+
+		VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
+		debugUtilsMessengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		debugUtilsMessengerCI.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		debugUtilsMessengerCI.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+		debugUtilsMessengerCI.pfnUserCallback = debugUtilsMessengerCallback;
+		VkResult result = vkCreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCI, nullptr, &debugUtilsMessenger);
+		assert(result == VK_SUCCESS);
+	}
+
+	void freeDebugCallback(VkInstance instance)
+	{
+		if (debugUtilsMessenger != VK_NULL_HANDLE)
+		{
+			vkDestroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
+		}
+	}
+
+
+	//void vkSubmitDebugUtilsMessageEXT(
+	//	VkInstance instance,
+	//	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	//	VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+	//	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
+
+	void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,
+		VkDebugUtilsMessageTypeFlagsEXT messageTypes = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+
+		VkDebugUtilsMessengerCallbackDataEXT pCallbackData{
+			VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT,//sType;
+			NULL,//pNext;
+			0,//flags;
+			"123",//pMessageIdName;
+			0,//messageIdNumber;
+			"123",// pMessage;
+			0,// queueLabelCount;
+			NULL,//pQueueLabels;
+			0,// cmdBufLabelCount;
+			NULL,//pCmdBufLabels;
+			0,//objectCount;
+			NULL //pObjects;
+		};
+ 
+		vkSubmitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, &pCallbackData);
+	}
 
 	// Get function pointers for the debug report extensions from the device
 	void setup(VkDevice device, VkPhysicalDevice physicalDevice)
 	{
 		vkSetDebugUtilsObjectTagEXT = (PFN_vkSetDebugUtilsObjectTagEXT)vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectTagEXT");
 		vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT");
+
 		vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT");
 		vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT");
 		vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdInsertDebugUtilsLabelEXT");
- 
+
+
+		vkQueueBeginDebugUtilsLabelEXT = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkQueueBeginDebugUtilsLabelEXT");
+		vkQueueEndDebugUtilsLabelEXT = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkQueueEndDebugUtilsLabelEXT");
+		vkQueueInsertDebugUtilsLabelEXT = (PFN_vkQueueInsertDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkQueueInsertDebugUtilsLabelEXT");
+
+
 		// Set flag if at least one function pointer is present
 		active = (vkSetDebugUtilsObjectTagEXT != VK_NULL_HANDLE);
 	}
@@ -97,8 +210,8 @@ namespace DebugUtils
 		}
 	}
 
-
 	// Start a new debug marker region
+	//To begin identifying a region using a debug label inside a queue, you may use the
 	void beginRegion(VkCommandBuffer cmdbuffer, const char* pMarkerName, glm::vec4 color)
 	{
 		// Check for valid function pointer (may not be present if not running in a debugging application)
@@ -111,9 +224,22 @@ namespace DebugUtils
 			vkCmdBeginDebugUtilsLabelEXT(cmdbuffer, &markerInfo);
 		}
 	}
- 
+
+	// End the current debug marker region
+	// Then, when the region of interest has passed, you may end the label region using
+	void endRegion(VkCommandBuffer cmdBuffer)
+	{
+		// Check for valid function (may not be present if not runnin in a debugging application)
+		if (vkCmdEndDebugUtilsLabelEXT)
+		{
+			vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
+		}
+	}
+
+
 
 	// Insert a new debug marker into the command buffer
+	//a single debug label may be inserted at any time
 	void insert(VkCommandBuffer cmdbuffer, std::string markerName, glm::vec4 color)
 	{
 		// Check for valid function pointer (may not be present if not running in a debugging application)
@@ -126,17 +252,41 @@ namespace DebugUtils
 			vkCmdInsertDebugUtilsLabelEXT(cmdbuffer, &markerInfo);
 		}
 	}
- 
 
-	// End the current debug marker region
-	void endRegion(VkCommandBuffer cmdBuffer)
+	void beginQueueRegin(VkQueue queue, const char* pMarkerName, glm::vec4 color)
 	{
-		// Check for valid function (may not be present if not runnin in a debugging application)
-		if (vkCmdEndDebugUtilsLabelEXT)
+		if (active)
 		{
-			vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
+			VkDebugUtilsLabelEXT markerInfo = {};
+			markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+			memcpy(markerInfo.color, &color[0], sizeof(float) * 4);
+			markerInfo.pLabelName = pMarkerName;
+			vkQueueBeginDebugUtilsLabelEXT(queue, &markerInfo);
 		}
 	}
+
+	void endQueueRegin(VkQueue queue)
+	{
+		if (vkQueueEndDebugUtilsLabelEXT)
+		{
+			vkQueueEndDebugUtilsLabelEXT(queue);
+		}
+	}
+
+	void queueInsert(VkQueue queue, std::string markerName, glm::vec4 color)
+	{
+		// Check for valid function pointer (may not be present if not running in a debugging application)
+		if (active)
+		{
+			VkDebugUtilsLabelEXT markerInfo = {};
+			markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+			memcpy(markerInfo.color, &color[0], sizeof(float) * 4);
+			markerInfo.pLabelName = markerName.c_str();
+			vkQueueInsertDebugUtilsLabelEXT(queue, &markerInfo);
+		}
+	}
+
+
 };
 
 // Vertex layout for the models
@@ -247,6 +397,8 @@ public:
 
 	~VulkanExample()
 	{
+		DebugUtils::freeDebugCallback(instance);
+
 		// Clean up used Vulkan resources 
 		// Note : Inherited destructor cleans up resources stored in base class
 		vkDestroyPipeline(device, pipelines.toonshading, nullptr);
@@ -586,7 +738,13 @@ public:
 					scissor.offset.x = 0;
 					scissor.extent.width = width;
 					vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+
+					//test insert
+					DebugUtils::insert(drawCmdBuffers[i], "wireframe", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 				}
+
+				DebugUtils::SubmitDebugUtilsMessageEXT(instance);
+				std::cout << "blink" << std::endl;
 
 				// Post processing
 				if (glow)
@@ -805,6 +963,7 @@ public:
 	{
 		VulkanExampleBase::prepare();
 		DebugUtils::setup(device, physicalDevice);
+		DebugUtils::setupDebugging(instance);
 		loadScene();
 		prepareOffscreen();
 		prepareUniformBuffers();
