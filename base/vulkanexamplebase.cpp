@@ -1290,6 +1290,13 @@ void VulkanExampleBase::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 			}
 		}
 		break;
+	case WM_GETMINMAXINFO:
+	{
+		LPMINMAXINFO minMaxInfo = (LPMINMAXINFO)lParam;
+		minMaxInfo->ptMinTrackSize.x = 64;
+		minMaxInfo->ptMinTrackSize.y = 64;
+		break;
+	}
 	case WM_ENTERSIZEMOVE:
 		resizing = true;
 		break;
@@ -2063,7 +2070,7 @@ void VulkanExampleBase::setupDepthStencil()
 	imageCI.arrayLayers = 1;
 	imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCI.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	imageCI.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
 	VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &depthStencil.image));
 	VkMemoryRequirements memReqs{};

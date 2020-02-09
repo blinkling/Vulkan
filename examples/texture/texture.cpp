@@ -85,7 +85,7 @@ public:
 
 	~VulkanExample()
 	{
-		// Clean up used Vulkan resources 
+		// Clean up used Vulkan resources
 		// Note : Inherited destructor cleans up resources stored in base class
 
 		destroyTextureImage(texture);
@@ -100,7 +100,7 @@ public:
 		uniformBufferVS.destroy();
 	}
 
-	// Enable physical device features required for this example				
+	// Enable physical device features required for this example
 	virtual void getEnabledFeatures()
 	{
 		// Enable anisotropic filtering if supported
@@ -121,9 +121,9 @@ public:
 
 		Optimal tiled images:
 			These are stored in an implementation specific layout matching the capability of the hardware. They usually support more formats and features and are much faster.
-			Optimal tiled images are stored on the device and not accessible by the host. So they can't be written directly to (like liner tiled images) and always require 
+			Optimal tiled images are stored on the device and not accessible by the host. So they can't be written directly to (like liner tiled images) and always require
 			some sort of data copy, either from a buffer or	a linear tiled image.
-		
+
 		In Short: Always use optimal tiled images for rendering.
 	*/
 	void loadTexture()
@@ -159,7 +159,7 @@ public:
 			vks::tools::exitFatal("Could not load texture from " + filename + "\n\nThe file may be part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 		}
 		result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
-#endif		
+#endif
 		assert(result == KTX_SUCCESS);
 
 		format = ktxTexture_GetVkFormat(ktxTexture);
@@ -204,7 +204,7 @@ public:
 			bufferCreateInfo.size = ktxTextureSize;
 			// This buffer is used as a transfer source for the buffer copy
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;		
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &stagingBuffer));
 
 			// Get memory requirements for the staging buffer (alignment, memory type bits)
@@ -228,7 +228,8 @@ public:
 			for (uint32_t i = 0; i < texture.mipLevels; i++) {
 				// Calculate offset into staging buffer for the current mip level
 				ktx_size_t offset;
-				assert(ktxTexture_GetImageOffset(ktxTexture, i, 0, 0, &offset) == KTX_SUCCESS);
+				KTX_error_code ret = ktxTexture_GetImageOffset(ktxTexture, i, 0, 0, &offset);
+				assert(ret == KTX_SUCCESS);
 				// Setup a buffer image copy structure for the current mip level
 				VkBufferImageCopy bufferCopyRegion = {};
 				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -287,9 +288,9 @@ public:
 			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition 
-			// Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
-			// Destination pipeline stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
+			// Source pipeline stage is host write/read execution (VK_PIPELINE_STAGE_HOST_BIT)
+			// Destination pipeline stage is copy command execution (VK_PIPELINE_STAGE_TRANSFER_BIT)
 			vkCmdPipelineBarrier(
 				copyCmd,
 				VK_PIPELINE_STAGE_HOST_BIT,
@@ -314,7 +315,7 @@ public:
 			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition 
+			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
 			// Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
 			// Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
 			vkCmdPipelineBarrier(
@@ -374,7 +375,7 @@ public:
 			texture.image = mappableImage;
 			texture.deviceMemory = mappableMemory;
 			texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			
+
 			// Setup image memory barrier transfer image to shader read layout
 			VkCommandBuffer copyCmd = VulkanExampleBase::createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
@@ -394,7 +395,7 @@ public:
 			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
 			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition 
+			// Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
 			// Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
 			// Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
 			vkCmdPipelineBarrier(
@@ -574,8 +575,8 @@ public:
 		vertices.bindingDescriptions.resize(1);
 		vertices.bindingDescriptions[0] =
 			vks::initializers::vertexInputBindingDescription(
-				VERTEX_BUFFER_BIND_ID, 
-				sizeof(Vertex), 
+				VERTEX_BUFFER_BIND_ID,
+				sizeof(Vertex),
 				VK_VERTEX_INPUT_RATE_VERTEX);
 
 		// Attribute descriptions
@@ -587,7 +588,7 @@ public:
 				VERTEX_BUFFER_BIND_ID,
 				0,
 				VK_FORMAT_R32G32B32_SFLOAT,
-				offsetof(Vertex, pos));			
+				offsetof(Vertex, pos));
 		// Location 1 : Texture coordinates
 		vertices.attributeDescriptions[1] =
 			vks::initializers::vertexInputAttributeDescription(
@@ -619,7 +620,7 @@ public:
 			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
 		};
 
-		VkDescriptorPoolCreateInfo descriptorPoolInfo = 
+		VkDescriptorPoolCreateInfo descriptorPoolInfo =
 			vks::initializers::descriptorPoolCreateInfo(
 				static_cast<uint32_t>(poolSizes.size()),
 				poolSizes.data(),
@@ -630,21 +631,21 @@ public:
 
 	void setupDescriptorSetLayout()
 	{
-		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = 
+		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
 		{
 			// Binding 0 : Vertex shader uniform buffer
 			vks::initializers::descriptorSetLayoutBinding(
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-				VK_SHADER_STAGE_VERTEX_BIT, 
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				VK_SHADER_STAGE_VERTEX_BIT,
 				0),
 			// Binding 1 : Fragment shader image sampler
 			vks::initializers::descriptorSetLayoutBinding(
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-				VK_SHADER_STAGE_FRAGMENT_BIT, 
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				VK_SHADER_STAGE_FRAGMENT_BIT,
 				1)
 		};
 
-		VkDescriptorSetLayoutCreateInfo descriptorLayout = 
+		VkDescriptorSetLayoutCreateInfo descriptorLayout =
 			vks::initializers::descriptorSetLayoutCreateInfo(
 				setLayoutBindings.data(),
 				static_cast<uint32_t>(setLayoutBindings.size()));
@@ -661,7 +662,7 @@ public:
 
 	void setupDescriptorSet()
 	{
-		VkDescriptorSetAllocateInfo allocInfo = 
+		VkDescriptorSetAllocateInfo allocInfo =
 			vks::initializers::descriptorSetAllocateInfo(
 				descriptorPool,
 				&descriptorSetLayout,
@@ -679,14 +680,14 @@ public:
 		{
 			// Binding 0 : Vertex shader uniform buffer
 			vks::initializers::writeDescriptorSet(
-				descriptorSet, 
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-				0, 
+				descriptorSet,
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				0,
 				&uniformBufferVS.descriptor),
 			// Binding 1 : Fragment shader texture sampler
 			//	Fragment shader: layout (binding = 1) uniform sampler2D samplerColor;
 			vks::initializers::writeDescriptorSet(
-				descriptorSet, 				
+				descriptorSet,
 				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		// The descriptor set will use a combined image sampler (sampler and image could be split)
 				1,												// Shader binding point 1
 				&textureDescriptor)								// Pointer to the descriptor image for our texture
@@ -717,7 +718,7 @@ public:
 
 		VkPipelineColorBlendStateCreateInfo colorBlendState =
 			vks::initializers::pipelineColorBlendStateCreateInfo(
-				1, 
+				1,
 				&blendAttachmentState);
 
 		VkPipelineDepthStencilStateCreateInfo depthStencilState =

@@ -355,7 +355,11 @@ public:
 		// Present the current buffer to the swap chain
 		// Pass the semaphore signaled by the command buffer submission from the submit info as the wait semaphore for swap chain presentation
 		// This ensures that the image is not presented to the windowing system until all commands have been submitted
-		VK_CHECK_RESULT(swapChain.queuePresent(queue, currentBuffer, renderCompleteSemaphore));
+		VkResult present = swapChain.queuePresent(queue, currentBuffer, renderCompleteSemaphore);
+		if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
+			VK_CHECK_RESULT(present);
+		}
+
 	}
 
 	// Prepare vertex and index buffers for an indexed triangle
@@ -630,7 +634,7 @@ public:
 		image.arrayLayers = 1;
 		image.samples = VK_SAMPLE_COUNT_1_BIT;
 		image.tiling = VK_IMAGE_TILING_OPTIMAL;
-		image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VK_CHECK_RESULT(vkCreateImage(device, &image, nullptr, &depthStencil.image));
 
